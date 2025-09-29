@@ -428,7 +428,7 @@ pub fn block_on<T: 'static>(future: impl Future<Output = T> + 'static) -> T {
     }
 }
 
-/// Call the `yield` canonical built-in function.
+/// Call the `thread.yield` canonical built-in function.
 ///
 /// This yields control to the host temporarily, allowing other tasks to make
 /// progress. It's a good idea to call this inside a busy loop which does not
@@ -450,20 +450,20 @@ pub fn block_on<T: 'static>(future: impl Future<Output = T> + 'static) -> T {
 /// ASAP in this situation.
 pub fn yield_blocking() -> bool {
     #[cfg(not(target_arch = "wasm32"))]
-    unsafe fn yield_() -> bool {
+    unsafe fn thread_yield() -> bool {
         unreachable!();
     }
 
     #[cfg(target_arch = "wasm32")]
     #[link(wasm_import_module = "$root")]
     extern "C" {
-        #[link_name = "[yield]"]
-        fn yield_() -> bool;
+        #[link_name = "[thread-yield]"]
+        fn thread_yield() -> bool;
     }
     // Note that the return value from the raw intrinsic is inverted, the
     // canonical ABI returns "did this task get cancelled" while this function
     // works as "should work continue going".
-    unsafe { !yield_() }
+    unsafe { !thread_yield() }
 }
 
 /// The asynchronous counterpart to [`yield_blocking`].
